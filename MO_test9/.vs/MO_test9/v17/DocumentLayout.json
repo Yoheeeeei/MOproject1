@@ -7,7 +7,8 @@
       "RelativeMoniker": "D:0:0:{ED8AF20C-E686-41E9-AC66-C110C5477106}|MO_test9\\MO_test9.csproj|solutionrelative:mo_test9\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{165256B9-3F12-44B4-8DCD-71F2160AB53B}|..\\..\\..\\source\\repos\\test2\\test2\\test2.csproj|c:\\users\\yohei\\source\\repos\\test2\\test2\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{ED8AF20C-E686-41E9-AC66-C110C5477106}|MO_test9\\MO_test9.csproj|c:\\users\\yohei\\desktop\\moproject1\\mo_test9\\mo_test9\\calculation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED8AF20C-E686-41E9-AC66-C110C5477106}|MO_test9\\MO_test9.csproj|solutionrelative:mo_test9\\calculation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{ED8AF20C-E686-41E9-AC66-C110C5477106}|MO_test9\\MO_test9.csproj|C:\\Users\\yohei\\Desktop\\MOproject1\\MO_test9\\mo_test9\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
@@ -21,8 +22,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Calculation.cs",
+              "DocumentMoniker": "C:\\Users\\yohei\\Desktop\\MOproject1\\MO_test9\\MO_test9\\Calculation.cs",
+              "RelativeDocumentMoniker": "MO_test9\\Calculation.cs",
+              "ToolTip": "C:\\Users\\yohei\\Desktop\\MOproject1\\MO_test9\\MO_test9\\Calculation.cs",
+              "RelativeToolTip": "MO_test9\\Calculation.cs",
+              "ViewState": "AQIAAIoAAAAAAAAAAAAQwJQAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-05-26T02:24:04.732Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
@@ -35,22 +49,10 @@
               "RelativeDocumentMoniker": "MO_test9\\Program.cs",
               "ToolTip": "C:\\Users\\yohei\\Desktop\\MOproject1\\MO_test9\\MO_test9\\Program.cs",
               "RelativeToolTip": "MO_test9\\Program.cs",
-              "ViewState": "AQIAACEBAAAAAAAAAAAiwC8BAAAAAAAA",
+              "ViewState": "AQIAAGkAAAAAAAAAAAAowHgAAABbAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-05-15T14:09:29.282Z",
               "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\yohei\\source\\repos\\test2\\test2\\Program.cs",
-              "RelativeDocumentMoniker": "..\\..\\..\\source\\repos\\test2\\test2\\Program.cs",
-              "ToolTip": "C:\\Users\\yohei\\source\\repos\\test2\\test2\\Program.cs",
-              "RelativeToolTip": "..\\..\\..\\source\\repos\\test2\\test2\\Program.cs",
-              "ViewState": "AQIAABYAAAAAAAAAAAAQwCAAAAAiAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-05-22T00:49:34.215Z"
             },
             {
               "$type": "Document",
