@@ -29,30 +29,7 @@ namespace MO_test9
 
            Function function = new Function("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
 
-            Calculation calculation = new Calculation();
 
-            double[,] ans;
-            double[,] data1 = new double[11, 3] {//x^2, x, 1
-            {0,0, 1},
-            {1,1,1 },
-            {4, 2,1},
-            {9,3, 1},
-            {16,4, 1},
-            {25,5, 1},
-            {1,-1, 1},
-            {4,-2, 1},
-            {9,-3, 1 },
-            {16,-4, 1},
-            {25,-5,1}
-            };
-
-            double[,] data2 = new double[11, 1] { { 0 },{ 1}, { 4 }, { 9 }, { 16 }, { 25 }, { 1 }, { 4 }, { 9 }, { 16 }, { 25 } };
-
-            ans = calculation.approximation(data1, data2);
-
-            Console.WriteLine(ans[0, 0]);
-            Console.WriteLine(ans[1, 0]);
-            Console.WriteLine(ans[2, 0]);
             //function.Workbook_set();
 
 
@@ -316,21 +293,26 @@ namespace MO_test9
                     dtheta = -dtheta;
                 }
             }
-            
+
             //データを取り終わりました。近似曲線を出して、最下点を推定します。
+            double[,] datamatrix_intensity = new double[datalist_intensity.Count, 3];
+            double[,] datamatrix_theta = new double[datalist_theta.Count, 1];
 
-            //あああああ
+            for (int j=0; j <= datalist_intensity.Count; j++)
+            {
+                datamatrix_intensity[j,0] = datalist_theta[j]* datalist_theta[j];
+                datamatrix_intensity[j, 1] = datalist_theta[j];
+                datamatrix_intensity[j, 2] = 1;
 
-            
-
-
-
-
-
+                datamatrix_theta[j, 0] = datalist_theta[j];
+            }
 
             Data data = new Data();
+            Calculation calculation = new Calculation();
+
+            data.faraday_deg = calculation.approximation(datamatrix_intensity,datamatrix_theta);
             data.mag = 1;
-            data.faraday_deg = 5;
+
 
 
             return data;

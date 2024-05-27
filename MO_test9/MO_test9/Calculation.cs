@@ -144,7 +144,7 @@ namespace MO_test9
         }
 
         //最小二乗法を疑似逆行列を用いて解決します。
-        public double[,] approximation(double[,] A, double[,] B)
+        public double approximation(double[,] A, double[,] B)
         {
 
             //Aの転置At, (A*At)の逆行列Ainを求めます。
@@ -153,18 +153,39 @@ namespace MO_test9
 
             //Ain*At*B が答えです。
 
-            double[,] product = MatrixTimesMatrix(MatrixTimesMatrix(Ain, At), B);
+            double[,] matrix_ans = MatrixTimesMatrix(MatrixTimesMatrix(Ain, At), B);
+
+            //最下点を見つけます。y = ax^2 + bx +cの微分です。
+
+            double product = -matrix_ans[1, 0] / matrix_ans[0, 0];
 
             return product;
         }
 
-        //最下点を見つけます。
-        public double find_lowpoint(double[,] A, double[,] B)
-        {
-            
+        //こんなかんじで使います
+        //Calculation calculation = new Calculation();
 
-            return 0;
-        }
+        //double[,] ans;
+        //double[,] data1 = new double[11, 3] {//x^2, x, 1
+        //    {0,0, 1},
+        //    {1,1,1 },
+        //    {4, 2,1},
+        //    {9,3, 1},
+        //    {16,4, 1},
+        //    {25,5, 1},
+        //    {1,-1, 1},
+        //    {4,-2, 1},
+        //    {9,-3, 1 },
+        //    {16,-4, 1},
+        //    {25,-5,1}
+        //    };
 
+        //double[,] data2 = new double[11, 1] { { 0 }, { 1 }, { 4 }, { 9 }, { 16 }, { 25 }, { 1 }, { 4 }, { 9 }, { 16 }, { 25 } };
+
+        //ans = calculation.approximation(data1, data2);
+
+        //    Console.WriteLine(ans[0, 0]);
+        //    Console.WriteLine(ans[1, 0]);
+        //    Console.WriteLine(ans[2, 0]);
     }
 }
