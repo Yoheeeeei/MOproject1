@@ -144,7 +144,7 @@ namespace MO_test9
         }
 
         //最小二乗法を疑似逆行列を用いて解決します。
-        double[,] approximation(double[,] A, double[,] B)
+        public double[,] approximation(double[,] A, double[,] B)
         {
 
             //Aの転置At, (A*At)の逆行列Ainを求めます。
@@ -157,12 +157,14 @@ namespace MO_test9
 
             return product;
         }
-        
 
+        //最下点を見つけます。
+        public double find_lowpoint(double[,] A, double[,] B)
+        {
+            
 
-
-
-
+            return 0;
+        }
 
     }
 }

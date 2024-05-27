@@ -27,9 +27,32 @@ namespace MO_test9
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Form1());
 
-            Function function = new Function("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
+           Function function = new Function("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
 
+            Calculation calculation = new Calculation();
 
+            double[,] ans;
+            double[,] data1 = new double[11, 3] {//x^2, x, 1
+            {0,0, 1},
+            {1,1,1 },
+            {4, 2,1},
+            {9,3, 1},
+            {16,4, 1},
+            {25,5, 1},
+            {1,-1, 1},
+            {4,-2, 1},
+            {9,-3, 1 },
+            {16,-4, 1},
+            {25,-5,1}
+            };
+
+            double[,] data2 = new double[11, 1] { { 0 },{ 1}, { 4 }, { 9 }, { 16 }, { 25 }, { 1 }, { 4 }, { 9 }, { 16 }, { 25 } };
+
+            ans = calculation.approximation(data1, data2);
+
+            Console.WriteLine(ans[0, 0]);
+            Console.WriteLine(ans[1, 0]);
+            Console.WriteLine(ans[2, 0]);
             //function.Workbook_set();
 
 
@@ -298,7 +321,7 @@ namespace MO_test9
 
             //あああああ
 
-
+            
 
 
 
