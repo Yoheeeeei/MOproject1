@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports; //COMポートを使うためです。
 using System.Text;     
-using Ivi.Visa.Interop; //USBを使うためです。
-using Aspose.Cells;
+using Ivi.Visa.Interop; //USBとGPIBを使うためです。
+using Aspose.Cells; //Excelの出力に使います。
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
@@ -27,7 +27,7 @@ namespace MO_test9
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Form1());
 
-           Function function = new Function("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
+           //Function function = new Function("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
 
 
             //function.Workbook_set();
@@ -41,6 +41,10 @@ namespace MO_test9
             //double aaaa = data1.mag;
             //Console.WriteLine(data1.mag);
             //Console.WriteLine(data1.faraday_deg);
+
+
+
+
         }
     }
 
@@ -50,8 +54,32 @@ namespace MO_test9
         public double faraday_deg;
     }
 
-
+    //実働する関数を書きます
     class Function
+    {
+        public void Nonmedia_measure()
+        {
+            Device device = new Device("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
+            Result_data result_Data = new Result_data();
+            Measurment measurment = new Measurment(device.Ref_serialport(), device.Ref_multi());
+            Electromagnet electromagnet = new Electromagnet(device.Ref_mag());
+
+            device.Open();
+            result_Data.Workbook_set();
+
+            double nonmedia_theta = measurment.Ref_nonmediatheta();
+            nonmedia_theta = measurment.Measurement_main(nonmedia_theta);
+            measurment.Nonmedia_theta_write(nonmedia_theta);
+
+            device.Close();
+        }
+    }
+
+
+
+
+    //デバイスの接続をします。
+    class Device
     {
         string comNum; //COMポートの番号です。
         string pInst_magpow; //電磁石電源のインスタンスパスです。
@@ -63,13 +91,8 @@ namespace MO_test9
         ResourceManager rm_multi = new ResourceManager();
         FormattedIO488 msg_multi = new FormattedIO488();
 
-        Workbook workbook = new Workbook();
-
-        double current_theta;
-        double nonmedia_theta;
-
-        public Function(string comNum, string pInst_magpow, string pInst_multi)
-        {   
+        public Device(string comNum, string pInst_magpow, string pInst_multi) 
+        {
             //コンストラクタを書くところです。
             this.comNum = comNum;
             this.pInst_magpow = pInst_magpow;
@@ -90,9 +113,7 @@ namespace MO_test9
             serialPort.NewLine = "\r";                   //改行コード指定
         }
 
-
-        //セットアップ用の関数です。
-        public void Device_open()
+        public void Open()
         {
             //  COMポートを開きます。
             serialPort.Open();
@@ -126,15 +147,35 @@ namespace MO_test9
             response = msg_multi.ReadString();
 
             Console.WriteLine(response);
-            //
         }
 
-        public void Device_close()
+        public void Close()
         {
             serialPort.Close();
             msg_magpow.IO.Close();
             msg_multi.IO.Close();
         }
+
+        public SerialPort Ref_serialport()
+        {
+            return serialPort;
+        }
+
+        public FormattedIO488 Ref_mag()
+        {
+            return msg_magpow;
+        }
+
+        public FormattedIO488 Ref_multi()
+        {
+            return msg_multi;
+        }
+    }
+
+
+    class Result_data
+    {
+        Workbook workbook = new Workbook();
 
         public void Workbook_set()
         {
@@ -146,8 +187,25 @@ namespace MO_test9
             worksheet1.Cells[0, 0].PutValue("H[mT]");
             worksheet1.Cells[0, 1].PutValue("Faraday deg[deg]");
 
-
             workbook.Save("MO_data.xlsx");
+        }
+
+        //あとで書き込み関数書きます
+
+    }
+
+    class Measurment
+    {
+        double current_theta;
+        double nonmedia_theta;
+
+        SerialPort serialPort;
+        FormattedIO488 msg_multi;
+
+        public Measurment(SerialPort serialPort, FormattedIO488 msg_mult)
+        {
+            this.serialPort = serialPort;
+            this.msg_multi = msg_mult;
         }
 
         public void Theta_read()
@@ -160,7 +218,7 @@ namespace MO_test9
 
             current_theta = double.Parse(sr.ReadLine());   //doubleにstringから変換します
             nonmedia_theta = double.Parse(sr.ReadLine());
-            
+
             sr.Close();
         }
 
@@ -176,7 +234,183 @@ namespace MO_test9
             sw.Close();
         }
 
-        //磁石を動かすやつです。
+        //測定関数です。
+        public double Measurement_main(double start_theta) //引数は、測定の開始角度を入れます
+        {// 最下点のファラデー回転角を磁界とともに返すメイン測定関数です。
+
+            Theta_read();
+
+            var datalist_intensity = new List<double>();
+            var datalist_theta = new List<double>();
+            double dtheta = 250;
+            int data_collectflag = 0;
+
+            Boolean start_flag = false;
+            while (start_flag == false)
+            {
+                //スタート地点から上下をはかり、どちらが減少傾向にあるか確かめます。
+                //もしも同じ値が出たら、dthetaを小さくしてもう一回します。
+                current_theta = start_theta;
+
+                datalist_intensity.Add(Moveing_and_reading(0));
+                datalist_theta.Add(current_theta);
+
+                datalist_intensity.Add(Moveing_and_reading(dtheta));
+                datalist_theta.Add(current_theta);
+
+                current_theta = start_theta;
+
+                datalist_intensity.Add(Moveing_and_reading(-dtheta));
+                datalist_theta.Add(current_theta);
+
+                if (datalist_intensity[1] - datalist_intensity[2] != 0)
+                {
+                    if (datalist_intensity[1] - datalist_intensity[2] > 0)
+                    {
+                        dtheta = -dtheta;
+                    }
+                    start_flag = true;
+                }
+                else
+                {
+                    dtheta /= 2;
+                }
+            }
+
+            //決めた方向に向けて測定をします。
+            Boolean revflag = false;
+            int datanum = 0;
+            int pre_datanum = 0;
+            while (data_collectflag < 5 || datalist_intensity.Count < 20)
+            {
+                datalist_intensity.Add(Moveing_and_reading(dtheta));
+                datalist_theta.Add(current_theta);
+
+                datanum = datalist_intensity.Count - 1;
+                pre_datanum = datanum - 1;
+
+                if (data_collectflag < 5 && datalist_intensity[datanum] - datalist_intensity[pre_datanum] > 0)
+                {
+                    data_collectflag++;
+                }
+
+                if (data_collectflag >= 5 && revflag == false)
+                {
+                    current_theta += dtheta / 2;
+                    dtheta = -dtheta;
+                    revflag = true;
+                }
+            }
+
+            //測定した中で、最小の点を探します。
+            double data_min = datalist_intensity[0];
+            datanum = 0;
+            int i = 0;
+            foreach (double data_compare in datalist_intensity)
+            {
+                if (data_min >= data_compare)
+                {
+                    data_min = data_compare;
+                    datanum = i;
+                }
+                i++;
+            }
+
+            //最小の点から左右に20点ずつ細かくとります。
+            current_theta = datalist_theta[datanum];
+            dtheta = 25;
+
+            for (i = 0; i <= 39; i++)
+            {
+                datalist_intensity.Add(Moveing_and_reading(dtheta));
+                datalist_theta.Add(current_theta);
+
+                if (i == 19)
+                {
+                    current_theta = datalist_theta[datanum];
+                    dtheta = -dtheta;
+                }
+            }
+
+            //データを取り終わりました。近似曲線を出して、最下点を推定します。
+            double[,] datamatrix_intensity = new double[datalist_intensity.Count, 3];
+            double[,] datamatrix_theta = new double[datalist_theta.Count, 1];
+
+            for (int j = 0; j <= datalist_intensity.Count; j++)
+            {
+                datamatrix_intensity[j, 0] = datalist_theta[j] * datalist_theta[j];
+                datamatrix_intensity[j, 1] = datalist_theta[j];
+                datamatrix_intensity[j, 2] = 1;
+
+                datamatrix_theta[j, 0] = datalist_theta[j];
+            }
+
+            Theta_write();
+
+            Calculation calculation = new Calculation();
+
+            double data = calculation.approximation(datamatrix_intensity, datamatrix_theta);
+
+            return data;
+        }
+
+
+        public double Moveing_and_reading(double dtheta)//動かしたい角度を要求して、回して、その先のマルチメータの電圧を返します。
+        {
+            //角度を足します。
+            current_theta += dtheta;
+            serialPort.WriteLine("AXI1:GOABS " + current_theta.ToString());
+            Delay();
+
+            //マルチメータに値を尋ねます。
+            msg_multi.WriteString("*IDN?");
+            string response = msg_multi.ReadString();
+            string[] response_arry = response.Split('V');
+
+            return (double.Parse(response_arry[0]));
+        }
+
+        public void Delay()
+        {
+            double getpos = 0, pre_getpos = 1;
+
+            while (getpos - pre_getpos != 0)
+            {
+
+                pre_getpos = getpos;
+                serialPort.WriteLine("AXI1:POS?");
+                string response = serialPort.ReadLine();
+                getpos = double.Parse(response);
+
+                if (getpos - pre_getpos == 1)
+                {
+                    pre_getpos = 0;
+                }
+            }
+        }
+
+        public double Ref_nonmediatheta()
+        {
+            return nonmedia_theta;
+        }
+
+        public void Nonmedia_theta_write(double new_nonmedia_theta)
+        {
+            nonmedia_theta = new_nonmedia_theta;
+            Theta_write();
+        }
+    }
+
+
+    class Electromagnet
+    {
+        FormattedIO488 msg_magpow;
+        public Electromagnet(FormattedIO488 msg_magpow)
+        {   
+            this.msg_magpow = msg_magpow;
+        }
+
+        //電磁石を動かすやつです。
         public double Mag_output(double h_target, Boolean flag_reverse)
         {
             double cur = 0.00378515 * h_target - 0.02470835;
@@ -195,161 +429,8 @@ namespace MO_test9
             {
                 return (-264.19 * cur + 6.5277);
             }
-
         }
 
-
-        //ここから測定関数です。
-        public Data Measurement_main(double start_theta) //引数は、測定の開始角度を入れます
-        {// 最下点のファラデー回転角を磁界とともに返すメイン測定関数です。
-
-            var datalist_intensity = new List<double>();
-            var datalist_theta = new List<double>();
-            double dtheta = 250;
-            int data_collectflag = 0;
-
-            Boolean start_flag = false;
-            while (start_flag == false){
-                //スタート地点から上下をはかり、どちらが減少傾向にあるか確かめます。
-                //もしも同じ値が出たら、dthetaを小さくしてもう一回します。
-                current_theta = start_theta;
-
-                datalist_intensity.Add(Measurement_read(0));
-                datalist_theta.Add(current_theta);
-
-                datalist_intensity.Add(Measurement_read(dtheta));
-                datalist_theta.Add(current_theta);
-
-                current_theta = start_theta;
-
-                datalist_intensity.Add(Measurement_read(-dtheta));
-                datalist_theta.Add(current_theta);
-
-                if(datalist_intensity[1] - datalist_intensity[2] != 0)
-                {
-                    if (datalist_intensity[1] - datalist_intensity[2] > 0)
-                    {
-                        dtheta = -dtheta;
-                    }
-                    start_flag = true;
-                }
-                else
-                {
-                    dtheta /= 2;
-                }
-            }
-
-            //決めた方向に向けて測定をします。
-            Boolean revflag = false;
-            int datanum = 0;
-            int pre_datanum = 0;
-            while (data_collectflag< 5 || datalist_intensity.Count < 20)
-            {
-                datalist_intensity.Add(Measurement_read(dtheta));
-                datalist_theta.Add(current_theta);
-
-                datanum = datalist_intensity.Count - 1;
-                pre_datanum = datanum - 1;
-
-                if (data_collectflag < 5 && datalist_intensity[datanum] - datalist_intensity[pre_datanum] > 0)
-                {
-                    data_collectflag ++;
-                }
-
-                if (data_collectflag >= 5 && revflag == false)
-                {
-                    current_theta += dtheta/2;
-                    dtheta = -dtheta;
-                    revflag = true;
-                }
-            }
-
-            //測定した中で、最小の点を探します。
-            double data_min = datalist_intensity[0];
-            datanum = 0;
-            int i = 0;
-            foreach(double data_compare in datalist_intensity)
-            {
-                if(data_min >= data_compare)
-                {
-                    data_min = data_compare;
-                    datanum = i;
-                }
-                i++;
-            }
-
-            //最小の点から左右に20点ずつ細かくとります。
-            current_theta = datalist_theta[datanum];
-            dtheta = 25;
-
-            for(i=0; i<=39; i++)
-            {
-                datalist_intensity.Add(Measurement_read(dtheta));
-                datalist_theta.Add(current_theta);
-
-                if(i == 19)
-                {
-                    current_theta = datalist_theta[datanum];
-                    dtheta = -dtheta;
-                }
-            }
-
-            //データを取り終わりました。近似曲線を出して、最下点を推定します。
-            double[,] datamatrix_intensity = new double[datalist_intensity.Count, 3];
-            double[,] datamatrix_theta = new double[datalist_theta.Count, 1];
-
-            for (int j=0; j <= datalist_intensity.Count; j++)
-            {
-                datamatrix_intensity[j,0] = datalist_theta[j]* datalist_theta[j];
-                datamatrix_intensity[j, 1] = datalist_theta[j];
-                datamatrix_intensity[j, 2] = 1;
-
-                datamatrix_theta[j, 0] = datalist_theta[j];
-            }
-
-            Data data = new Data();
-            Calculation calculation = new Calculation();
-
-            data.faraday_deg = calculation.approximation(datamatrix_intensity,datamatrix_theta);
-            data.mag = 1;
-
-
-
-            return data;
-        }
-
-        public double Measurement_read(double dtheta)//動かしたい角度を要求して、回して、その先のマルチメータの電圧を返します。
-        {
-            //角度を足します。
-            current_theta += dtheta;
-            serialPort.WriteLine("AXI1:GOABS " + current_theta.ToString());
-            Delay();
-
-            //マルチメータに値を尋ねます。
-            msg_multi.WriteString("*IDN?");
-            string response = msg_multi.ReadString();
-            string[] response_arry = response.Split('V');
-
-            return (double.Parse(response_arry[0]));
-        }
-
-        public void Delay()
-        {
-            double getpos=0, pre_getpos=1;
-
-            while (getpos - pre_getpos != 0){
-
-                pre_getpos = getpos;
-                serialPort.WriteLine("AXI1:POS?");
-                string response = serialPort.ReadLine();
-                getpos = double.Parse(response);
-
-                if(getpos - pre_getpos == 1)
-                {
-                    pre_getpos = 0;
-                }
-            }
-        }
 
     }
 }
