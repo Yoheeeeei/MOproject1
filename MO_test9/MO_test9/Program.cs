@@ -11,6 +11,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Data.Common;
+using System.Security.Cryptography;
 
 
 namespace MO_test9
@@ -26,22 +28,6 @@ namespace MO_test9
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Form1());
-
-           //Function function = new Function("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
-
-
-            //function.Workbook_set();
-
-
-            //function.Device_open();
-            //function.Device_close();
-
-            //Data data1 = function.Measurement_main();
-
-            //double aaaa = data1.mag;
-            //Console.WriteLine(data1.mag);
-            //Console.WriteLine(data1.faraday_deg);
-
 
 
 
@@ -71,11 +57,174 @@ namespace MO_test9
             nonmedia_theta = measurment.Measurement_main(nonmedia_theta);
             measurment.Nonmedia_theta_write(nonmedia_theta);
 
+            //データをワークシートに格納します。
+            var datalist_theta = measurment.Ref_datalist_theta();
+            var datalist_intensity = measurment.Ref_datalist_intensity();
+
+            int column = 0, row = 2;
+
+            foreach(double data in datalist_theta)
+            {
+                result_Data.Workbook_write(row, column, data);
+                row++;
+            }
+
+            column = 1;  row = 2;
+
+            foreach (double data in datalist_intensity)
+            {
+                result_Data.Workbook_write(row, column, data);
+                row++;
+            }
+
+            result_Data.Workbook_save();
             device.Close();
+        }
+
+        public void Faraday_measure(double h_max, double dh)
+        {
+            Device device = new Device("COM3", "USB::0x0B3E::0x104A::CP002893::INSTR", "GPIB::6::INSTR");
+            Result_data result_Data = new Result_data();
+            Measurment measurment = new Measurment(device.Ref_serialport(), device.Ref_multi());
+            Electromagnet electromagnet = new Electromagnet(device.Ref_mag());
+
+            device.Open();
+            //メディア無し角度を持って来ます。
+            double nonmedia_theta = measurment.Ref_nonmediatheta();
+            int column = 4;
+            Hold_data hold_data = new Hold_data();
+
+            //第１象限
+            hold_data = Faraday_measure_sub(measurment, electromagnet, result_Data, 0,
+                dh, false, hold_data.datas_mag, hold_data.datas_faradaydeg, nonmedia_theta, column);
+
+            //第２象限
+            hold_data = Faraday_measure_sub(measurment, electromagnet, result_Data, h_max,
+                dh, true, hold_data.datas_mag, hold_data.datas_faradaydeg, hold_data.start_theta, hold_data.column);
+
+            //第３象限
+            hold_data = Faraday_measure_sub(measurment, electromagnet, result_Data, 0,
+                dh, true, hold_data.datas_mag, hold_data.datas_faradaydeg, hold_data.start_theta, hold_data.column);
+
+            //第４象限
+            hold_data = Faraday_measure_sub(measurment, electromagnet, result_Data, h_max,
+               dh, false, hold_data.datas_mag, hold_data.datas_faradaydeg, hold_data.start_theta, hold_data.column);
+
+            //最終的なデータを格納します。
+            int row = 2;
+            foreach (double data in hold_data.datas_mag)
+            {
+                result_Data.Workbook_write(row, 2, data);
+                row++;
+            }
+            row = 2;
+            foreach (double data in hold_data.datas_faradaydeg)
+            {
+                result_Data.Workbook_write(row, 3, data);
+                row++;
+            }
+
+            result_Data.Workbook_save();
+            device.Close();
+        }
+
+        public Hold_data Faraday_measure_sub(Measurment measurment, Electromagnet electromagnet, Result_data result_Data,
+            double target_h,double dh,Boolean flag_reverse,List<double> datas_mag, List<double> datas_faradaydeg, double start_theta, int column)
+        {
+            int row = 2;
+
+            if (target_h == 0)
+            {
+
+                for (double current_h = target_h; current_h > 0; current_h -= dh)
+                {
+                    datas_mag.Add(electromagnet.Mag_output(current_h, flag_reverse));
+                    start_theta = measurment.Measurement_main(start_theta);
+                    datas_faradaydeg.Add(start_theta);
+
+                    var datalist_theta = measurment.Ref_datalist_theta();
+                    var datalist_intensity = measurment.Ref_datalist_intensity();
+
+                    result_Data.Workbook_writestr(1, column, "Theta[deg]");
+                    result_Data.Workbook_writestr(1, column + 1, "Light intensity[V]");
+
+                    foreach (double data in datalist_theta)
+                    {
+                        result_Data.Workbook_write(row, column, data);
+                        row++;
+                    }
+
+                    column += 1; row = 2;
+
+                    foreach (double data in datalist_intensity)
+                    {
+                        result_Data.Workbook_write(row, column, data);
+                        row++;
+                    }
+
+                    column += 1; row = 2;
+
+                    if (current_h <= dh)
+                    {
+                        current_h = 0;
+                    }
+                }
+
+            } else
+            {
+                for (double current_h = 0; current_h < target_h; current_h += dh)
+                {
+                    datas_mag.Add(electromagnet.Mag_output(current_h, flag_reverse));
+                    start_theta = measurment.Measurement_main(start_theta);
+                    datas_faradaydeg.Add(start_theta);
+
+                    var datalist_theta = measurment.Ref_datalist_theta();
+                    var datalist_intensity = measurment.Ref_datalist_intensity();
+
+                    result_Data.Workbook_writestr(1, column, "Theta[deg]");
+                    result_Data.Workbook_writestr(1, column + 1, "Light intensity[V]");
+
+                    foreach (double data in datalist_theta)
+                    {
+                        result_Data.Workbook_write(row, column, data);
+                        row++;
+                    }
+
+                    column += 1; row = 2;
+
+                    foreach (double data in datalist_intensity)
+                    {
+                        result_Data.Workbook_write(row, column, data);
+                        row++;
+                    }
+
+                    column += 1; row = 2;
+
+                    if (current_h <= dh)
+                    {
+                        current_h = 0;
+                    }
+                }
+            }
+
+            Hold_data hold_data = new Hold_data();
+            hold_data.start_theta = start_theta;
+            hold_data.column = column;
+            hold_data.datas_mag = datas_mag;
+            hold_data.datas_faradaydeg = datas_faradaydeg;
+
+            return hold_data;
+
         }
     }
 
-
+    class Hold_data
+    {
+        public double start_theta;
+        public int column;
+        public List<double> datas_mag = new List<double>();
+        public List<double> datas_faradaydeg = new List<double>();
+    }
 
 
     //デバイスの接続をします。
@@ -176,28 +325,51 @@ namespace MO_test9
     class Result_data
     {
         Workbook workbook = new Workbook();
+        Worksheet worksheet1;
+        Worksheet worksheet2;
 
         public void Workbook_set()
         {
-            Worksheet worksheet1 = workbook.Worksheets[0];
-            Worksheet worksheet2 = workbook.Worksheets[workbook.Worksheets.Add()];
+            worksheet1 = workbook.Worksheets[0];
+            worksheet2 = workbook.Worksheets[workbook.Worksheets.Add()];
             worksheet1.Name = "Data";
             worksheet2.Name = "Graph";
 
-            worksheet1.Cells[0, 0].PutValue("H[mT]");
-            worksheet1.Cells[0, 1].PutValue("Faraday deg[deg]");
+            worksheet1.Cells[0, 0].PutValue("Non-media collect datas");
+            worksheet1.Cells[1, 0].PutValue("Theta[deg]");
+            worksheet1.Cells[1, 1].PutValue("Light intensity[V]");
+            worksheet1.Cells[0, 2].PutValue("Fraday rotation");
+            worksheet1.Cells[1, 2].PutValue("H[mT]");
+            worksheet1.Cells[1, 3].PutValue("ratation angle[deg]");
+            worksheet1.Cells[0, 4].PutValue("Faraday rotation cllect datas");
 
             workbook.Save("MO_data.xlsx");
         }
 
         //あとで書き込み関数書きます
+        public void Workbook_write(int row,int column,double value)
+        {
+            worksheet1.Cells[row, column].PutValue(value);
+        }
 
+        public void Workbook_writestr(int row, int column, string value)
+        {
+            worksheet1.Cells[row, column].PutValue(value);
+        }
+
+        public void Workbook_save()
+        {
+            workbook.Save("MO_data.xlsx");
+        }
     }
 
     class Measurment
     {
         double current_theta;
         double nonmedia_theta;
+
+        List<double> datalist_intensity = new List<double>();
+        List<double> datalist_theta = new List<double>();
 
         SerialPort serialPort;
         FormattedIO488 msg_multi;
@@ -240,8 +412,9 @@ namespace MO_test9
 
             Theta_read();
 
-            var datalist_intensity = new List<double>();
-            var datalist_theta = new List<double>();
+            datalist_intensity = new List<double>();
+            datalist_theta = new List<double>();
+
             double dtheta = 250;
             int data_collectflag = 0;
 
@@ -387,6 +560,16 @@ namespace MO_test9
                     pre_getpos = 0;
                 }
             }
+        }
+
+        public List<double> Ref_datalist_intensity()
+        {
+            return datalist_intensity;
+        }
+
+        public List<double> Ref_datalist_theta()
+        {
+            return datalist_theta;
         }
 
         public double Ref_nonmediatheta()
