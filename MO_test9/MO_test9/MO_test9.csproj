@@ -76,6 +76,13 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <None Include="packages.config" />
+    <None Include="Properties\DataSources\Calculation.datasource" />
+    <None Include="Properties\DataSources\Data.datasource" />
+    <None Include="Properties\DataSources\Form1.datasource" />
+    <None Include="Properties\DataSources\Function.datasource" />
+    <None Include="Properties\DataSources\MO_test9.Properties.Resources.datasource" />
+    <None Include="Properties\DataSources\MO_test9.Properties.Settings.datasource" />
+    <None Include="Properties\DataSources\Program.datasource" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

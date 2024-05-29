@@ -21,5 +21,29 @@ namespace MO_test9
         {
 
         }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button_mediameasure_Click(object sender, EventArgs e)
+        {
+
+            Function function = new Function();
+            double h_max = double.Parse(textBox_Hmax.Text);
+            double dh = double.Parse(textBox_dH.Text);
+
+            function.Faraday_measure(h_max,dh);
+
+        }
+
+        private void button_nonmedia_Click(object sender, EventArgs e)
+        {
+
+            Function function = new Function();
+            function.Nonmedia_measure();
+
+        }
     }
 }
